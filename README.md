@@ -100,12 +100,28 @@
 | :--- | :--- |
 | **`cloud.mail.ru`** | Москва |
 | **`meta.cloud.mail.ru`** | Москва |
-| **`data-XX.cloud.mail.ru`** (S3 + CDN)| Москва, СПб, Краснодар, Екатеринбург, Новосибирск, Хабаровровск |
+| **`data-XX.cloud.mail.ru`** (S3)| Москва, СПб, Краснодар, Екатеринбург, Новосибирск, Хабаровск |
 
-### Схема балансировки (GeoDNS)
-- У каждого ЦД свой домен. Благодаря GeoDNS пользователь перенаправляется на ближайший региональный ДЦ.
-- Пользователи загружают/скачивают файлы в основоном с одного и того же регионального ДЦ.
-- CDN кэширует запрашиваемые файлы.
+### Схема балансировки (Latency-Based DNS)
+- У каждого ДЦ свой домен. Благодаря Latency-Based DNS пользователь перенаправляется на ближайший региональный ДЦ.
+- Пользователи загружают/скачивают файлы в основном с одного и того же регионального ДЦ.
+
+# Локальная балансировка
+### Схема для доменов **`cloud.mail.ru`** и **`meta.cloud.mail.ru`**
+- При помощи DNS весь трафик попадает на один IP в ДЦ
+- Затем внутри ДЦ через L4 (Virtual Server via Direct Routing + Keepalived) трафик распределяется на ноды NginX (L7)
+- Изменение количества нод NginX автоматически детектится Keepalived и L4 автоматически подстраивается
+- На каждой ноде NginX установлен единый TLS session ticket (для Termination SSl)
+- NginX реализует least connection балансировку для инстансов бэкенда
+- Кластером инстансов бэкенда и Nginx управляет Kubernetes
+#### Дополнительно для **`data-XX.cloud.mail.ru`** (S3) 
+- Используются поддомены: api.data-XX.cloud.mail.ru, s3.data-XX.cloud.mail.ru
+##### Загрузка файлов
+- Client → api.data-XX.cloud.mail.ru/upload/* → -//- (Backend [Auth]) → возвращаем клиенту { "upload_url": "https://s3.data-XX/*" }
+- Client → s3.data-XX.cloud.mail.ru/bucket/* → L4 (SSL Termшination  + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
+##### Скачивание файлов
+- Client → api.data-XX.cloud.mail.ru/download/* → -//- (Backend [Auth]) → возвращаем клиенту { "download_url": "https://s3.data-XX/*" }
+- Client → s3.data-XX.cloud.mail.ru/bucket/* → L4 (SSL Termшination + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
 
 
 ### Источники:
