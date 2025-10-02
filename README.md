@@ -123,6 +123,13 @@
 - Client → api.data-XX.cloud.mail.ru/download/* → -//- (Backend [Auth]) → возвращаем клиенту { "download_url": "https://s3.data-XX/*" }
 - Client → s3.data-XX.cloud.mail.ru/bucket/* → L4 (SSL Termшination + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
 
+### Формулы резервирования
+| Компонент | Схема резервирования |
+|-----------|---------------------|
+| Backend сервисы | N*2 |
+| Nginx L7 | N+1 |
+| L4 балансировщики| N+1 |
+
 
 ### Источники:
 1. [Be1.ru - Статистика Cloud.Mail.ru](https://be1.ru/stat/cloud.mail.ru)
