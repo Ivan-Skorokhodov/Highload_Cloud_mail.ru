@@ -144,14 +144,14 @@
 
 ### Расчет размеров таблиц
 
-| Название таблицы | Расчеты | Итог |
-|------------------|---------|-------|
-| **UserTable** | `35,000,000 записей × 400 bytes`<br>Состав: ID(8) + Login(50) + PasswordHash(60) + Session(256) + ExpireTime(8) + CreatedAt/UpdatedAt(16) | **14 ГБ** |
-| **Directory** | `350,000,000 записей × 141 bytes`<br>Состав: ID(8) + UserId(8) + DirectoryId(8) + DirName(100) + DirMode(1) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `35M пользователей × 10 папок` | **49 ГБ** |
-| **FileMetadata** | `45,500,000,000 записей × 391 bytes`<br>Состав: ID(8) + FileName(100) + FileType(50) + FileVolume(8) + FileMode(1) + BaseUrl(200) + DirectoryID(8) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `45.5 млрд файлов` | **17.8 TБ** |
-| **FileData** | Взято из открытых источкников[[3]](#источники) | **335 ПБ** |
-| **DirectoryActivity** | `600,000,000 записей × 52 bytes`<br>Состав: ID(8) + DirectoryId(8) + UserId(8) + Action(20) + Time(8)<br>Расчет записей: `4M DAU × 5 действий/день × 30 дней` | **31 ГБ** |
-| **FileActivity** | `7,128,000,000 записей × 52 bytes`<br>Состав: ID(8) + FileId(8) + UserId(8) + Action(20) + Time(8)<br>Расчет записей: `(1650 RPS + 1100 RPS) × 86400 × 30 дней` | **370 ГБ** |
+| Название таблицы | Расчеты | Итог | Нагрузка на запись | Нагрузка на чтение |
+|------------------|---------|-------|-------------------|-------------------|
+| **UserTable** | `35,000,000 записей × 400 bytes`<br>Состав: ID(8) + Login(50) + PasswordHash(60) + Session(256) + ExpireTime(8) + CreatedAt/UpdatedAt(16) | **14 ГБ** | **1 RPS**<br>(авторизация) | **125 RPS**<br>(проверка сессий) |
+| **Directory** | `350,000,000 записей × 141 bytes`<br>Состав: ID(8) + UserId(8) + DirectoryId(8) + DirName(100) + DirMode(1) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `35M пользователей × 10 папок` | **49 ГБ** | **5 RPS**<br>(создание папок) | **250 RPS**<br>(листинг директорий) |
+| **FileMetadata** | `45,500,000,000 записей × 391 bytes`<br>Состав: ID(8) + FileName(100) + FileType(50) + FileVolume(8) + FileMode(1) + BaseUrl(200) + DirectoryID(8) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `45.5 млрд файлов` | **17.8 TБ** | **1320 RPS**<br>(загрузка + удаление) | **2875 RPS**<br>(листинг + скачивание) |
+| **FileData** | Взято из открытых источников[[3]](#источники) | **335 ПБ** | **1100 RPS**<br>(загрузка файлов) | **1650 RPS**<br>(скачивание файлов) |
+| **DirectoryActivity** | `600,000,000 записей × 52 bytes`<br>Состав: ID(8) + DirectoryId(8) + UserId(8) + Action(20) + Time(8)<br>Расчет записей: `4M DAU × 5 действий/день × 30 дней` | **31 ГБ** | **5 RPS**<br>(аудит действий) | **1 RPS**<br>(отчеты и аналитика) |
+| **FileActivity** | `7,128,000,000 записей × 52 bytes`<br>Состав: ID(8) + FileId(8) + UserId(8) + Action(20) + Time(8)<br>Расчет записей: `(1650 RPS + 1100 RPS) × 86400 × 30 дней` | **370 ГБ** | **2750 RPS**<br>(аудит операций) | **5 RPS**<br>(статистика и мониторинг) |
 
 ### Источники:
 1. [Be1.ru - Статистика Cloud.Mail.ru](https://be1.ru/stat/cloud.mail.ru)
