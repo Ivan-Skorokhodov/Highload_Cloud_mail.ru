@@ -162,7 +162,6 @@
 - CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID); - поиск файлов по директории для листинга
 
 ### СУБД
-
 | Таблица | Технология |
 |----------------------|-------------|
 | **UserTable**        | PostgreSQL  |
@@ -173,7 +172,6 @@
 | **FileActivity**     | ClickHouse  |
 
 ### Шардирование
-
 | Таблица | Подход | 
 |----------------------|-------------|
 | **FileMetadata**     | шардирование по DirectoryId при помощи Citus + Redis |
@@ -182,15 +180,21 @@
 | **FileActivity**     | вероятно по дате (`toYYYYMMDD(Time)`) в ClickHouse |
 
 ### Резервирование
-
 | Таблица | Схема резервирования |
 |----------------------|----------------------|
 | **UserTable**        | Master-Slave с 2 репликами (синхронная и асинхронная) | 
 | **Directory**        | Master-Slave с 2 репликами (синхронная и асинхронная) |
-| **FileMetadata**     | Master-Slave с 2 репликами (синхронная и асинхронная) |
+| **FileMetadata**     | Master-Slave с 2 репликами (синхронная и асинхронная) на шард |
 | **FileAccess**       | Replication Factor = 3 (каждая запись хранится на 3 нодах)|
 | **FileData**         | Репликация 3× |
 | **FileActivity**     | ReplicatedMergeTree (2 реплики на шард) |
+
+
+### Интеграции через Kafka
+| Поток | Основные передаваемые данные | Цель |
+|--------|----------------------|------------------|
+| **Сервис загрузки данных → FileMetadata** | `fileId`, `userId`, `directoryId`, `baseUrl` | Асинхронная передача информации о загруженном файле.|
+| **Все сервисы → FileActivity (ClickHouse)** | `time`, `userId`, `fileId`, `action` | Поток событий аудита в ClickHouse.|
 
 
 
