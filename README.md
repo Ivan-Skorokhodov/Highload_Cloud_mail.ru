@@ -140,7 +140,7 @@
 | **FileMetadata** | Хранение метаинформации о файлах без самих файловых данных |
 | **FileData** | Связь метаданных с физическим расположением файлов в Object Storage |
 | **FileActivity** | Аудит действий пользователей с файлами |
-| **FileAссуыы** | Управление видимостью файлов |
+| **FileAссess** | Проверка прав доступа к файлам |
 
 ## Расчет размеров таблиц и QPS
 
@@ -148,10 +148,10 @@
 |------------------|---------|------|------------------:|--------------------------:|--------------------------:|
 | **UserTable** | `35,000,000 записей × 400 bytes`<br>Состав: ID(8) + Login(50) + PasswordHash(60) + Session(256) + ExpireTime(8) + CreatedAt/UpdatedAt(16) | **14 ГБ** | **35,000,000** | **1 QPS**<br>(авторизация) | **125 QPS**<br>(проверка сессий) |
 | **Directory** | `350,000,000 записей × 140 bytes`<br>Состав: ID(8) + UserId(8) + DirectoryId(8) + DirName(100) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `35M пользователей × 10 папок` | **49 ГБ** | **350,000,000** | **5 QPS**<br>(создание папок) | **250 QPS**<br>(листинг директорий) |
-| **FileMetadata** | `45,500,000,000 записей × 390 bytes`<br>Состав: ID(8) + FileName(100) + FileType(50) + FileVolume(8) + BaseUrl(200) + DirectoryID(8) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `45.5 млрд файлов` | **17.8 ТБ** | **45,500,000,000** | **1320 QPS**<br>(загрузка + удаление) | **1900 QPS**<br>(листинг + скачивание) |
+| **FileMetadata** | `45,500,000,000 записей × 390 bytes`<br>Состав: ID(8) + FileID(8) + FileName(100) + FileType(50) + FileVolume(8) + DirectoryId(8) + BaseUrl(200) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `45.5 млрд файлов` | **17.8 ТБ** | **45,500,000,000** | **1320 QPS**<br>(загрузка + удаление) | **1900 QPS**<br>(листинг + скачивание) |
 | **FileData** | Взято из открытых источников [[3]](#источники) | **335 ПБ** | **45,500,000,000** | **1100 QPS**<br>(загрузка файлов) | **1650 QPS**<br>(скачивание файлов) |
 | **FileActivity** | `7,128,000,000 записей × 52 bytes`<br>Состав: ID(8) + FileId(8) + UserId(8) + Action(20) + Time(8)<br>Расчет записей: `(1650 QPS + 1100 QPS) × 86400 × 30 дней` | **370 ГБ** | **7,128,000,000** | **2750 QPS**<br>(аудит операций) | **5 QPS**<br>(аналитика) |
-| **FileAccess** | `518,400,000 записей × 80 bytes`<br>Состав: ID(8) + UserId(8) + FileID(8) + Mode(1) + Url(200) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `200 QPS × 86400 × 30 дней` | **41.5 ГБ** | **518,400,000** | **200 QPS**<br>(изменение видимости) | **1900 QPS**<br>(листинг + скачивание) |
+| **FileAccess** | `518,400,000 записей × 80 bytes`<br>Состав: ID(8) + UserId(8) + Mode(1) + Url(200) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `200 QPS × 86400 × 30 дней` | **270 ГБ** | **3,370,000,000** | **1300 QPS**<br>(загрузка + изменение видимости) | **1650 QPS**<br>(скачивание файлов) |
 
 # Физическая схема БД
 ### Индексы
@@ -159,7 +159,40 @@
 - CREATE INDEX idx_user_session ON UserTable(Session); - поиск пользователя по сессии
 - CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId); - поиск родительской директории по пользователю
 - CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName); - поиск вложенных директорий
-- CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID); - поиск файлов по директории для листинга (ТУТ ШАРДИНГ НУЖЕН - нативное шардирование в PG по UserID)
+- CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID); - поиск файлов по директории для листинга
+
+### СУБД
+
+| Таблица | Технология |
+|----------------------|-------------|
+| **UserTable**        | PostgreSQL  |
+| **Directory**        | PostgreSQL  |
+| **FileMetadata**     | PostgreSQL  |
+| **FileData**         | Ceph        |
+| **FileAccess**       | Cassandra   |
+| **FileActivity**     | ClickHouse  |
+
+### Шардирование
+
+| Таблица | Подход | 
+|----------------------|-------------|
+| **FileMetadata**     | шардирование по DirectoryId при помощи Citus + Redis |
+| **FileAccess**       | автошардирование (Cassandra) |
+| **FileData**         | автошардирование (Ceph CRUSH) |
+| **FileActivity**     | вероятно по дате (`toYYYYMMDD(Time)`) в ClickHouse |
+
+### Резервирование
+
+| Таблица | Схема резервирования |
+|----------------------|----------------------|
+| **UserTable**        | Master-Slave с 2 репликами (синхронная и асинхронная) | 
+| **Directory**        | Master-Slave с 2 репликами (синхронная и асинхронная) |
+| **FileMetadata**     | Master-Slave с 2 репликами (синхронная и асинхронная) |
+| **FileAccess**       | Replication Factor = 3 (каждая запись хранится на 3 нодах)|
+| **FileData**         | Репликация 3× |
+| **FileActivity**     | ReplicatedMergeTree (2 реплики на шард) |
+
+
 
 ### Источники:
 1. [Be1.ru - Статистика Cloud.Mail.ru](https://be1.ru/stat/cloud.mail.ru)
