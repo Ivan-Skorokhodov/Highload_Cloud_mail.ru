@@ -114,14 +114,14 @@
 - На каждой ноде NginX установлен единый TLS session ticket (для Termination SSl)
 - NginX реализует least connection балансировку для инстансов бэкенда
 - Кластером инстансов бэкенда и Nginx управляет Kubernetes
-#### Дополнительно для **`data-XX.cloud.mail.ru`** (S3) 
-- Используются поддомены: api.data-XX.cloud.mail.ru, s3.data-XX.cloud.mail.ru
+#### Дополнительно для **`data.cloud.mail.ru`** (S3) 
+- Используются поддомены: api.s-XX.data.cloud.mail.ru, s3.s-XX.data.cloud.mail.ru
 ##### Загрузка файлов
-- Client → api.data-XX.cloud.mail.ru/upload/* → -//- (Backend [Auth]) → возвращаем клиенту { "upload_url": "https://s3.data-XX/*" }
-- Client → s3.data-XX.cloud.mail.ru/bucket/* → L4 (SSL Termшination  + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
+- Client → api.s-XX.data.cloud.mail.ru/upload/* → -//- (Backend [Auth]) → возвращаем клиенту { "upload_url": "https://s3.data-XX/*" }
+- Client → s3.s-XX.data.cloud.mail.ru/bucket/* → L4 (SSL Termшination  + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
 ##### Скачивание файлов
-- Client → api.data-XX.cloud.mail.ru/download/* → -//- (Backend [Auth]) → возвращаем клиенту { "download_url": "https://s3.data-XX/*" }
-- Client → s3.data-XX.cloud.mail.ru/bucket/* → L4 (SSL Termшination + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
+- Client → api.s-XX.data.cloud.mail.ru/download/* → -//- (Backend [Auth]) → возвращаем клиенту { "download_url": "https://s3.data-XX/*" }
+- Client → s3.s-XX.data.cloud.mail.ru/bucket/* → L4 (SSL Termшination + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
 
 ### Формулы резервирования
 | Компонент | Схема резервирования |
@@ -203,8 +203,8 @@
 |-----------------------|-------------------------|
 | PostgreSQL   | backup 1×/день + WAL каждые ≤15 мин |
 | Cassandra    | snapshots 1×/день + инкрементальные SSTables каждые ≤3 часа  |
-| ClickHouse     | backup 1×/день |
-| Ceph        | RGW bucket versioning |
+| ClickHouse   | backup 1×/день |
+| Ceph         | RGW bucket versioning |
 
 ### Источники:
 1. [Be1.ru - Статистика Cloud.Mail.ru](https://be1.ru/stat/cloud.mail.ru)
