@@ -151,16 +151,10 @@
 | **FileMetadata** | `45,500,000,000 записей × 390 bytes`<br>Состав: ID(8) + FileID(8) + FileName(100) + FileType(50) + FileVolume(8) + DirectoryId(8) + BaseUrl(200) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `45.5 млрд файлов` | **17.8 ТБ** | **45,500,000,000** | **1320 QPS**<br>(загрузка + удаление) | **1900 QPS**<br>(листинг + скачивание) |
 | **FileData** | Взято из открытых источников [[3]](#источники) | **335 ПБ** | **45,500,000,000** | **1100 QPS**<br>(загрузка файлов) | **1650 QPS**<br>(скачивание файлов) |
 | **FileActivity** | `7,128,000,000 записей × 52 bytes`<br>Состав: ID(8) + FileId(8) + UserId(8) + Action(20) + Time(8)<br>Расчет записей: `(1650 QPS + 1100 QPS) × 86400 × 30 дней` | **370 ГБ** | **7,128,000,000** | **2750 QPS**<br>(аудит операций) | **5 QPS**<br>(аналитика) |
-| **FileAccess** | `518,400,000 записей × 80 bytes`<br>Состав: ID(8) + UserId(8) + Mode(1) + Url(200) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `200 QPS × 86400 × 30 дней` | **270 ГБ** | **3,370,000,000** | **1300 QPS**<br>(загрузка + изменение видимости) | **1650 QPS**<br>(скачивание файлов) |
+| **FileAccess** | `3,370,600,000 записей × 80 bytes`<br>Состав: ID(8) + UserId(8) + Mode(1) + Url(200) + CreatedAt/UpdatedAt(16)<br>Расчет записей: `1300 QPS × 86400 × 30 дней` | **270 ГБ** | **3,370,000,000** | **1300 QPS**<br>(загрузка + изменение видимости) | **1650 QPS**<br>(скачивание файлов) |
 
 # Физическая схема БД
-### Индексы
-- CREATE INDEX idx_user_login ON UserTable(Login); - поиск пользователя по логину при аутентификации
-- CREATE INDEX idx_user_session ON UserTable(Session); - поиск пользователя по сессии
-- CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId); - поиск родительской директории по пользователю
-- CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName); - поиск вложенных директорий
-- CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID); - поиск файлов по директории для листинга
-
+![Физическая схема БД](DBphys.png)
 ### СУБД
 | Таблица | Технология |
 |----------------------|-------------|
@@ -171,6 +165,13 @@
 | **FileAccess**       | Cassandra   |
 | **FileActivity**     | ClickHouse  |
 
+### Индексы
+- CREATE INDEX idx_user_login ON UserTable(Login); - поиск пользователя по логину при аутентификации
+- CREATE INDEX idx_user_session ON UserTable(Session); - поиск пользователя по сессии
+- CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId); - поиск родительской директории по пользователю
+- CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName); - поиск вложенных директорий
+- CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID); - поиск файлов по директории для листинга
+
 ### Шардирование
 | Таблица | Подход | 
 |----------------------|-------------|
@@ -178,8 +179,8 @@
 | **FileAccess**       | автошардирование (Cassandra) |
 | **FileData**         | автошардирование (Ceph CRUSH) |
 | **FileActivity**     | шардирование по дате (ClickHouse) |
-#### + Изначально по глобальной балансировке FileAccess разделена на части: там, где храним файл, там и храним запись в FileAccess
-#### + Перед БД стоят мультиплексеры
+#### + Изначально по глобальной балансировке FileAccess и FileData разделены на части: там, где храним файл в FileData, там и храним запись в FileAccess.
+#### + Перед БД стоят мультиплексеры.
 
 ### Резервирование
 | Таблица | Схема резервирования |
@@ -188,7 +189,7 @@
 | **Directory**        | Master-Slave с 2 репликами (синхронная и асинхронная) |
 | **FileMetadata**     | Master-Slave с 2 репликами (синхронная и асинхронная) на шард |
 | **FileAccess**       | Replication Factor = 3 (каждая запись хранится на 3 нодах)|
-| **FileData**         | Репликация 3× |
+| **FileData**         | Репликация 3× (Ceph CRUSH) |
 | **FileActivity**     | ReplicatedMergeTree (2 реплики на шард) |
 
 ### Интеграции через Kafka
@@ -197,6 +198,13 @@
 | **Сервис загрузки данных → FileMetadata** | `fileId`, `userId`, `directoryId`, `baseUrl` | Асинхронная передача информации о загруженном файле.|
 | **Все сервисы → FileActivity (ClickHouse)** | `time`, `userId`, `fileId`, `action` | Поток событий аудита в ClickHouse.|
 
+### Резервное копирование
+| База данных          | Частота                 |
+|-----------------------|-------------------------|
+| PostgreSQL   | backup 1×/день + WAL каждые ≤15 мин |
+| Cassandra    | snapshots 1×/день + инкрементальные SSTables каждые ≤3 часа  |
+| ClickHouse     | backup 1×/день |
+| Ceph        | RGW bucket versioning |
 
 ### Источники:
 1. [Be1.ru - Статистика Cloud.Mail.ru](https://be1.ru/stat/cloud.mail.ru)
