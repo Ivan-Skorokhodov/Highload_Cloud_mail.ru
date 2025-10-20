@@ -155,15 +155,6 @@
 
 # Физическая схема БД
 ![Физическая схема БД](DBphys.png)
-### СУБД
-| Таблица | Технология |
-|----------------------|-------------|
-| **UserTable**        | PostgreSQL  |
-| **Directory**        | PostgreSQL  |
-| **FileMetadata**     | PostgreSQL  |
-| **FileData**         | Ceph        |
-| **FileAccess**       | Cassandra   |
-| **FileActivity**     | ClickHouse  |
 
 ### Индексы
 - CREATE INDEX idx_user_login ON UserTable(Login); - поиск пользователя по логину при аутентификации
@@ -171,6 +162,7 @@
 - CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId); - поиск родительской директории по пользователю
 - CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName); - поиск вложенных директорий
 - CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID); - поиск файлов по директории для листинга
+- PRIMARY KEY (Token); - простой ключ партиции для поиска файла по токену из публичной ссылки
 
 ### Шардирование
 | Таблица | Подход | 
