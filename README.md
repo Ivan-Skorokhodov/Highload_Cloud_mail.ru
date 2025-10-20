@@ -157,16 +157,21 @@
 ![Физическая схема БД](DBphys.png)
 
 ### Индексы
-- CREATE INDEX idx_user_login ON UserTable(Login); - поиск пользователя по логину при аутентификации
-- CREATE INDEX idx_user_session ON UserTable(Session); - поиск пользователя по сессии
-- CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId); - поиск родительской директории по пользователю
-- CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName); - поиск вложенных директорий
-- CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID); - поиск файлов по директории для листинга
-- PRIMARY KEY (Token); - простой ключ партиции для поиска файла по токену из публичной ссылки
+| База данных   | Таблица        | Индексы                          | Пояснение |
+|---------------|----------------|-----------------------------------------|-----------|
+| **PostgreSQL** | UserTable     | `CREATE INDEX idx_user_login ON UserTable(Login);` | поиск пользователя по логину при аутентификации |
+| **PostgreSQL** | UserTable     | `CREATE INDEX idx_user_session ON UserTable(Session);` | поиск пользователя по сессии |
+| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId);` | поиск родительской директории по пользователю |
+| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName);` | поиск вложенных директорий |
+| **PostgreSQL** | FileMetadata  | `CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID);` | поиск файлов по директории для листинга |
+| **Cassandra**  | FileAccess    | `PRIMARY KEY (Token)` | простой ключ партиции для поиска файла по токену из публичной ссылки |
+| **ClickHouse** | FileActivity  | `ORDER BY (time, user_id, file_id)` | первичный индекс для поиска по датам для аналитики |
+
 
 ### Шардирование
 | Таблица | Подход | 
 |----------------------|-------------|
+| **Directory**        | шардирование по UserId при помощи Citus |
 | **FileMetadata**     | шардирование по DirectoryId при помощи Citus |
 | **FileAccess**       | автошардирование (Cassandra) |
 | **FileData**         | автошардирование (Ceph CRUSH) |
@@ -183,6 +188,7 @@
 | **FileAccess**       | Replication Factor = 3 (каждая запись хранится на 3 нодах)|
 | **FileData**         | Репликация 3× (Ceph CRUSH) |
 | **FileActivity**     | ReplicatedMergeTree (2 реплики на шард) |
+| **Kafka** | Replication Factor = 2 (каждая партиция хранится на двух брокерах) |
 
 ### Интеграции через Kafka
 | Поток | Основные передаваемые данные | Цель |
@@ -197,6 +203,7 @@
 | Cassandra    | snapshots 1×/день + инкрементальные SSTables каждые ≤3 часа  |
 | ClickHouse   | backup 1×/день |
 | Ceph         | RGW bucket versioning |
+| Kafka | Репликация партиций |
 
 ### Источники:
 1. [Be1.ru - Статистика Cloud.Mail.ru](https://be1.ru/stat/cloud.mail.ru)
