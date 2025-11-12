@@ -243,6 +243,9 @@
 | **Ceph**                           | **Репликация 3× (CRUSH)**|
 | **Kafka**                          | **Replication Factor = 3** – каждая партиция хранится на трех брокерах.                                          |
 
+# Схема проекта
+![Схема проекта](scheme.png)
+
 
 ### Источники:
 1. [Be1.ru - Статистика Cloud.Mail.ru](https://be1.ru/stat/cloud.mail.ru)
