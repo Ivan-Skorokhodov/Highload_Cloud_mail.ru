@@ -165,8 +165,8 @@
 | **PostgreSQL** | UserTable     | `CREATE INDEX idx_user_login ON UserTable(Login);` | поиск пользователя по логину при аутентификации |
 | **PostgreSQL** | UserTable     | `CREATE INDEX idx_user_session ON UserTable(Session);` | поиск пользователя по сессии |
 | **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_user_root ON Directory(UserID, DirectoryID);` | поиск родительской директории по пользователю |
-| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_children_name ON Directory(DirectoryID, UserID);` | поиск вложенных директорий |
-| **PostgreSQL** | FileMetadata  | `CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileID, UserID);` | поиск файлов по директории для листинга |
+| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_children_name ON Directory(UserID, DirectoryID, DirName);` | поиск вложенных директорий |
+| **PostgreSQL** | FileMetadata  | `CREATE INDEX idx_fm_dir_name ON FileMetadata(UserID, DirectoryID, FileName, FileID);` | поиск файлов по директории для листинга |
 | **Cassandra**  | FileAccess    | `PRIMARY KEY (FileID, UserID)` | проверка прав доступа: партиционирование по FileID (все права для файла в одной партиции), кластеризация по UserID для проверки доступа |
 | **ClickHouse** | FileActivity  | `ORDER BY (time, user_id, file_id)` | первичный индекс для поиска по датам для аналитики |
 
@@ -195,8 +195,8 @@
 ### Интеграции через Kafka
 | Поток | Основные передаваемые данные | Цель |
 |--------|----------------------|------------------|
-| **Сервис загрузки данных → FileMetadata** | `DirID`, `FileID`, `Url`, `Hash` | Асинхронная передача информации о загруженном файле.|
-| **Все сервисы → FileActivity (ClickHouse)** | `time`, `UserID`, `FileID`, `action` | Поток событий аудита в ClickHouse.|
+| **Сервис загрузки данных → FileMetadata** | `FileID`, `UserID` `Url`, `Hash` | Асинхронная передача информации о загруженном файле.|
+| **Все сервисы → FileActivity (ClickHouse)** | `Time`, `UserID`, `FileID`, `Action` | Поток событий аудита в ClickHouse.|
 
 ### Резервное копирование
 | База данных          | Частота                 |
