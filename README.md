@@ -119,7 +119,7 @@
 - Используются поддомены: api.s-XX.data.cloud.mail.ru, s3.s-XX.data.cloud.mail.ru
 ##### Загрузка файлов
 - Client → data.cloud.mail.ru/upload/* → L4 → L7 → Backend [Auth] → возвращаем клиенту { "upload_url": "https://s3.s-XX/*" }
-- Client → s3.s-XX.data.cloud.mail.ru/bucket/* → L4 (SSL Termшination  + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
+- Client → s3.s-XX.data.cloud.mail.ru/bucket/* → L4 (SSL Termшination  + HealthCheck, NginX в stream mode) → S3 Gateway → Object Storage
 ##### Скачивание файлов
 - Client → api.s-XX.data.cloud.mail.ru/download/* → L4 → L7 → Backend [Auth] → возвращаем клиенту { "download_url": "https://s3.s-XX/*" }
 - Client → s3.s-XX.data.cloud.mail.ru/bucket/* → L4 (SSL Termшination + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
