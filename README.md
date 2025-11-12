@@ -7,7 +7,7 @@
 - Скачивание файла с хранилища;
 - Создание директорий и перемещение файлов между ними;
 - Показ списка всех файлов директории (листинг);
-- Уравление видимостью файлов (недоступно никому кроме владельца, доступно только по ссылке, доступно всем).
+- Уравление видимостью файлов (доступно всем / доступно только определенным).
 
 ### Целевая аудитория [[1]](#источники):
 | Страна             | Процент аудитории | 
@@ -82,7 +82,6 @@
 | **ИТОГ** | | ~375 | ~1 600 000 |
 
 # Глобальная балансировка
-
 ### Функциональное разбиение по доменам
 | Домен | Назначение | Методы API |
 | :--- | :--- | :--- |
@@ -108,20 +107,21 @@
 
 # Локальная балансировка
 ### Схема для доменов **`cloud.mail.ru`** и **`meta.cloud.mail.ru`**
-- При помощи DNS весь трафик попадает на один IP в ДЦ.
-- Внутри ДЦ L4 (LVS + Keepalived) распределяет трафик на ноды Kubernetes.
-- Keepalived обеспечивает отказоустойчивость между L4-балансировщиками (active-passive схема).
-- На нодах Kubernetes запущены поды Nginx (L7), которые принимают трафик от LVS.
-- Kubernetes управляет количеством подов Nginx и backend-сервисов, обеспечивая масштабирование и отказоустойчивость.
-- На каждой ноде Nginx используется единый TLS session ticket (для Termination SSL).
-- Nginx выполняет балансировку по принципу *least connections* между backend-инстансами.
+# Локальная балансировка
+### Схема для доменов **`cloud.mail.ru`** и **`meta.cloud.mail.ru`**
+- При помощи DNS весь трафик попадает на один IP в ДЦ
+- Затем внутри ДЦ через L4 (Virtual Server via Direct Routing + Keepalived) трафик распределяется на ноды NginX (L7)
+- Изменение количества нод NginX автоматически детектится Keepalived и L4 автоматически подстраивается
+- На каждой ноде NginX установлен единый TLS session ticket (для Termination SSl)
+- NginX реализует least connection балансировку для инстансов бэкенда
+- Кластером инстансов бэкенда и управляет Kubernetes
 #### Дополнительно для **`data.cloud.mail.ru`** (S3) 
 - Используются поддомены: api.s-XX.data.cloud.mail.ru, s3.s-XX.data.cloud.mail.ru
 ##### Загрузка файлов
-- Client → api.s-XX.data.cloud.mail.ru/upload/* → -//- (Backend [Auth]) → возвращаем клиенту { "upload_url": "https://s3.data-XX/*" }
+- Client → data.cloud.mail.ru/upload/* → L4 → L7 → Backend [Auth] → возвращаем клиенту { "upload_url": "https://s3.s-XX/*" }
 - Client → s3.s-XX.data.cloud.mail.ru/bucket/* → L4 (SSL Termшination  + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
 ##### Скачивание файлов
-- Client → api.s-XX.data.cloud.mail.ru/download/* → -//- (Backend [Auth]) → возвращаем клиенту { "download_url": "https://s3.data-XX/*" }
+- Client → api.s-XX.data.cloud.mail.ru/download/* → L4 → L7 → Backend [Auth] → возвращаем клиенту { "download_url": "https://s3.s-XX/*" }
 - Client → s3.s-XX.data.cloud.mail.ru/bucket/* → L4 (SSL Termшination + HealthCheck, NginX в stream mode) → S3 Gateway (Кэширование) → Object Storage
 
 ### Формулы резервирования
@@ -129,7 +129,6 @@
 |-----------|---------------------|
 | Backend сервисы | N+1 |
 | Nginx L7 | N+1 |
-| L4 балансировщики| N+1 |
 
 # Логическая схема БД
 ![Логическая схема БД](DB.png)
@@ -141,7 +140,7 @@
 | **FileMetadata** | Хранение метаинформации о файлах без самих файловых данных |
 | **FileData** | Связь метаданных с физическим расположением файлов в Object Storage |
 | **FileActivity** | Аудит действий пользователей с файлами |
-| **FileAссess** | Проверка прав доступа к файлам |
+| **FileAссess** | Проверка доступа к файлам |
 
 ## Расчет размеров таблиц и QPS
 
@@ -165,7 +164,7 @@
 | **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId);` | поиск родительской директории по пользователю |
 | **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName);` | поиск вложенных директорий |
 | **PostgreSQL** | FileMetadata  | `CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID);` | поиск файлов по директории для листинга |
-| **Cassandra**  | FileAccess    | `PRIMARY KEY (Token)` | простой ключ партиции для поиска файла по токену из публичной ссылки |
+| **Cassandra**  | FileAccess    | `PRIMARY KEY (FileID, UserId)` | проверка прав доступа: партиционирование по FileID (все права для файла в одной партиции), кластеризация по UserId для проверки доступа |
 | **ClickHouse** | FileActivity  | `ORDER BY (time, user_id, file_id)` | первичный индекс для поиска по датам для аналитики |
 
 
@@ -177,7 +176,6 @@
 | **FileAccess**       | автошардирование (Cassandra) |
 | **FileData**         | автошардирование (Ceph CRUSH) |
 | **FileActivity**     | шардирование по дате (ClickHouse) |
-#### + Изначально по глобальной балансировке FileAccess и FileData разделены на части: там, где храним файл в FileData, там и храним запись в FileAccess.
 #### + Перед БД стоят мультиплексеры.
 
 ### Резервирование
@@ -235,7 +233,6 @@
 | Компонент                          | Схема резервирования                                                                                                |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **Backend сервисы (Go)**           | **N+1** –  Управляется через Kubernetes |
-| **Linux Virtual Server (LVS, L4)** | **N+1** – active-pessive с Keepalived (VRRP)                                    |
 | **Nginx (L7 балансировщик)**       | **N+1** – Управляется через Kubernetes           |
 | **PostgreSQL**                     | **Master-Slave с 2 репликами** – одна синхронная и одна асинхронная. Ежедневный backup + WAL ≤ 15 мин              |
 | **Cassandra**                      | **Replication Factor = 3**, каждая запись хранится на 3 нодах. Snapshots 1×/день                      |
