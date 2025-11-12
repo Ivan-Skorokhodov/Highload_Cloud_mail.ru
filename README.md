@@ -114,7 +114,7 @@
 - Изменение количества нод NginX автоматически детектится Keepalived и L4 автоматически подстраивается
 - На каждой ноде NginX установлен единый TLS session ticket (для Termination SSl)
 - NginX реализует least connection балансировку для инстансов бэкенда
-- Кластером инстансов бэкенда и управляет Kubernetes
+- Кластером инстансов бэкенда управляет Kubernetes
 #### Дополнительно для **`data.cloud.mail.ru`** (S3) 
 - Используются поддомены: api.s-XX.data.cloud.mail.ru, s3.s-XX.data.cloud.mail.ru
 ##### Загрузка файлов
@@ -131,7 +131,7 @@
 | Nginx L7 | N+1 |
 
 # Логическая схема БД
-![Логическая схема БД](DB.png)
+![Логическая схема БД](db.png)
 
 | Таблица | Назначение |
 |---------|------------|
@@ -157,30 +157,29 @@
 
 
 # Физическая схема БД
-![Физическая схема БД](DBphys.png)
+![Физическая схема БД](db-phys.png)
 
 ### Индексы
 | База данных   | Таблица        | Индексы                          | Пояснение |
 |---------------|----------------|-----------------------------------------|-----------|
 | **PostgreSQL** | UserTable     | `CREATE INDEX idx_user_login ON UserTable(Login);` | поиск пользователя по логину при аутентификации |
 | **PostgreSQL** | UserTable     | `CREATE INDEX idx_user_session ON UserTable(Session);` | поиск пользователя по сессии |
-| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_user_root ON Directory(UserId, DirectoryId);` | поиск родительской директории по пользователю |
-| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_children_name ON Directory(DirectoryId, DirName);` | поиск вложенных директорий |
-| **PostgreSQL** | FileMetadata  | `CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileName, ID);` | поиск файлов по директории для листинга |
-| **Cassandra**  | FileAccess    | `PRIMARY KEY (FileID, UserId)` | проверка прав доступа: партиционирование по FileID (все права для файла в одной партиции), кластеризация по UserId для проверки доступа |
+| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_user_root ON Directory(UserID, DirectoryID);` | поиск родительской директории по пользователю |
+| **PostgreSQL** | Directory     | `CREATE INDEX idx_dir_children_name ON Directory(DirectoryID, UserID);` | поиск вложенных директорий |
+| **PostgreSQL** | FileMetadata  | `CREATE INDEX idx_fm_dir_name ON FileMetadata(DirectoryID, FileID, UserID);` | поиск файлов по директории для листинга |
+| **Cassandra**  | FileAccess    | `PRIMARY KEY (FileID, UserID)` | проверка прав доступа: партиционирование по FileID (все права для файла в одной партиции), кластеризация по UserID для проверки доступа |
 | **ClickHouse** | FileActivity  | `ORDER BY (time, user_id, file_id)` | первичный индекс для поиска по датам для аналитики |
 
 
 ### Шардирование
 | Таблица | Подход | 
 |----------------------|-------------|
-| **Directory**        | шардирование по UserId при помощи Citus |
-| **FileMetadata**     | шардирование по DirectoryId при помощи Citus |
+| **Directory**        | шардирование по UserID при помощи Citus |
+| **FileMetadata**     | шардирование по UserID при помощи Citus |
 | **FileAccess**       | автошардирование (Cassandra) |
 | **FileData**         | автошардирование (Ceph CRUSH) |
 | **FileActivity**     | шардирование по дате (ClickHouse) |
 #### + FileAccess располоагются рядом с FileData разнесенно по ДЦ.
-#### + Перед БД стоят мультиплексеры.
 
 ### Резервирование
 | Таблица | Схема резервирования |
