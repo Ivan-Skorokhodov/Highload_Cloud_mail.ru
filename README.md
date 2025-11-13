@@ -253,6 +253,24 @@
 | **AV_Scanner** | Проверяет загруженные файлы на вирусы (**ClamAV**) с использованием базы **Malware Signatures**. Получает задания из **локальной Kafka**, сканирует содержимое в Ceph и публикует результат в **глобальную Kafka**. После проверки обновляется `FileMetadata.mode` — файл становится доступен для скачивания. |
 | **Metrics_Service** | Консьюмер Kafka, агрегирует события загрузок/скачиваний/изменений и записывает статистику в **ClickHouse FileActivity** для аналитики и мониторинга. |
 
+## Для загрузки
+### Выбор региона  
+- Client → DNS `data.cloud.mail.ru` → попадаем в **ближайший региональный ДЦ**.  
+- **Backend [Auth] (Access_Service)** на `https://data.cloud.mail.ru/upload/*` выдает { "upload_url": "https://s3.s-XX..." }.
+  > `s-XX` — регион текущего ДЦ, выбранного DNS.
+
+### A. Fast path (<10 MB, синхронный AV)
+1. Client → `s3.s-XX…` → `L4` → **S3 Gateway**.  
+2. **S3 Gateway**: валидация, `whole-file hash`, **sync fast scan**, запись в Ceph.  
+3. Публикует `file_uploaded` в **глобальную Kafka** (загружен и проверен).  
+
+### B. Async path (≥10 MB)
+1. Client → `s3.s-XX…` → `L4` → **S3 Gateway**.  
+2. **S3 Gateway**: валидация, `whole-file hash`, запись в Ceph со статусом `pending`.  
+3. Публикует `file_uploaded` в **локальную Kafka** для антивирусной проверки и `file_uploaded` в **глобальную Kafka** (загружен, но не проверен).  
+4. **AV_Scanner** читает локальный топик, сканирует объект, публикует `av_result` в **глобальную Kafka** (загружен и проверен).  
+5. **File_Meta_Service** обновляет `FileMetadata.mode`.
+
 
 
 
