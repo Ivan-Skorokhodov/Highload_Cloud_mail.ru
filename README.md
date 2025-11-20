@@ -322,6 +322,25 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **AV scanner node**     | own     | 1×EPYC 7543P / 128GB RAM / 1×3.84TB NVMe / 2×25Gb/s       | 32    | 6   | €12 500      |
 
 ### Хранилища
+| Хранилище     | Объём     | RPS  | CPU |
+|---------------|-----------|------|-----|
+| PostgreSQL    | 19.4 ТБ   | 2275 | 64  |
+| Ceph          | 335 ПБ    | 2750 | 32  |
+| Cassandra     | 1.9 ТБ    | 3170 | 48  |
+| ClickHouse    | 370 ГБ    | 2755 | 32  |
+
+### Конфигурации узлов хранилищ
+
+| Название     | Хостинг         | Конфигурация                                                   | Cores | Cnt | Покупка |
+|--------------|-----------------|----------------------------------------------------------------|-------|-----|-----------|
+| PostgreSQL   | own/bare metal  | 1×EPYC 7543 / 256GB RAM / 4×NVMe 3.8TB / 2×25GbE               | 32    | 4   | €7200    |
+| Ceph (на регион) | own/bare metal | 2×EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 2×100GbE | 48    | 258 | €13000   |
+| Ceph (всего) | —               | —                                                              | —     | 1550 узлов | — |
+| Cassandra    | own/bare metal  | 1×EPYC 7443 / 128GB RAM / 2×NVMe 1.6–3.8TB / 2×25GbE       | 24 | 9   | €7500 |
+| ClickHouse   | own/bare metal  | 1×EPYC 7443 / 128GB RAM / 2×NVMe 1.6TB / 2×10GbE               | 24    | 3   | €9600    |
+
+
+
 
 
 ### Источники:
