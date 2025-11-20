@@ -301,17 +301,27 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **NGINX (L7: data)**   | ~1146       | SSL Term + Proxy          | 3   | ~0.03 GB  | ~16 Мбит/с |
 | **NGINX (L4, stream)** | ~1146       | L4 passthrough            | 3   | ~0.03 GB  | ~62 Гбит/с |
 
+### Размещение
 | Компонент            | Где запускаем |
 |----------------------|----------------|
 | **User_Service**         | Kubernetes     | 
 | **File_Meta_Service**    | Kubernetes     | 
 | **Access_Service**       | Kubernetes     | 
 | **Metrics_Service**      | Kubernetes     | 
-| **Nginx (L7)**           | Bare metal     | 
+| **Nginx (L7)**           | ВМ| 
 | **S3 Gateway**           | Bare metal     | 
 | **AV_Scanner**           | Bare metal     | 
 | **Nginx (L4, stream)**   | Bare metal     | 
 
+### Железо
+| Название узла           | Хостинг | Конфигурация                                               | Cores | Cnt | Покупка |
+|-------------------------|---------|------------------------------------------------------------|-------|-----|--------------|
+| **kubernode + nginx L7**| own     | 1×EPYC 7713P / 256GB RAM / 2×1.92TB NVMe / 2×25Gb/s       | 64    | 8   | €10 600      |
+| **nginx L4 stream node**| own     | 1×EPYC 7313 / 64GB RAM / 1×960GB NVMe / 2×100Gb/s         | 16    | 6   | €7 200       | 
+| **S3 gateway node**     | own     | 1×EPYC 7543P / 128GB RAM / 2×3.84TB NVMe / 2×100Gb/s      | 32    | 6   | €14 500      |
+| **AV scanner node**     | own     | 1×EPYC 7543P / 128GB RAM / 1×3.84TB NVMe / 2×25Gb/s       | 32    | 6   | €12 500      |
+
+### Хранилища
 
 
 ### Источники:
