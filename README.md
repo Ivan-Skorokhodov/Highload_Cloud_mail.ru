@@ -345,7 +345,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 14 | €4 000    |
 | **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 7  | €3 000      |
 | **PostgreSQL** | EPYC 7543 / 256GB RAM / 4×NVMe 3.8TB / 2×25GbE       | 32    | 6   | €5 000  |
-| **ClickHouse**     | EPYC 7443 / 128GB RAM / 2×NVMe 1.6TB / 2×10GbE               | 24    | 3   | €3 000  |
+| **ClickHouse**     | EPYC 7443 / 128GB RAM / 2×NVMe 1.6TB / 2×10GbE               | 24    | 2   | €3 000  |
 | **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 24    | 921 | €7 500   |
 | **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 3   | €4 000 |
 | **Kafka (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 3 | €2 000 |
