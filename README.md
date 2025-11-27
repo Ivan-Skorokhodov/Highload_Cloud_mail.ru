@@ -338,7 +338,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 ### Железо для Москвы (`cloud` + `meta` + `data`)
 | Узел           | Конфигурация                           | Cores | Cnt    | Цена            |
 | -------------- | -------------------------------------- | ----- | ------ | --------------- |
-| **kubernode**  | EPYC 7713P / 128GB / 2×NVMe / 2×25GbE   | 64    | 3  | €5 000      |
+| **kubernode**  | EPYC 7713P / 128GB / 2×NVMe / 2×25GbE   | 64    | 4  | €5 000      |
 | **NGINX L7 (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 2 | €2 000 |
 | **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 2 | €2 000 |
 | **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 2×200GbE    | 16    | 2   | €5 200 |
