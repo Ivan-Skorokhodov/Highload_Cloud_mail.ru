@@ -234,7 +234,8 @@
 | Компонент                          | Схема резервирования                                                                                                |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **Backend сервисы (Go)**           | **N+1** –  Управляется через Kubernetes |
-| **Nginx (L7 балансировщик)**       | **N+1** – Вне Kubernetes; трафик распределяется через LVS (L4) + Keepalived           |
+| **Nginx (L7 балансировщик)**       | **2N** – Вне Kubernetes; трафик распределяется через LVS (L4) + Keepalived           |
+| **Nginx (L4 балансировщик)**       | **2N** – Вне Kubernetes;           |
 | **PostgreSQL** | **Primary–Replica (Patroni) с 2 репликами** — одна синхронная, одна асинхронная; автоматический failover. **PgBouncer** для пуллинга подключений. Ежедневный backup + WAL ≤ 15 мин. |
 | **Cassandra**                      | **Replication Factor = 3**, каждая запись хранится на 3 нодах. Snapshots 1×/день                      |
 | **ClickHouse**                     | **ReplicatedMergeTree** – по 2 реплики на шард. Ежедневное резервное копирование                                   |
@@ -330,19 +331,19 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | Cassandra     | ~1.1 ТБ    | ~1875 |
 | ClickHouse    | 370 ГБ    | 2755 |
 
-### Железо для Москвы (`cloud` + `meta` + `data`) (пока без резервирования)
+### Железо для Москвы (`cloud` + `meta` + `data`)
 | Узел           | Конфигурация                           | Cores | Cnt    | Цена            |
 | -------------- | -------------------------------------- | ----- | ------ | --------------- |
-| **kubernode**  | EPYC 7713P / 64GB / 2×NVMe / 2×25GbE   | 64    | 3  | €5 000      |
-| **NGINX L7 (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €2 000 |
-| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €2 000 |
-| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 2×200GbE    | 16    | 1   | €5 200 |
-| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 13 | €4 000    |
-| **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 6  | €3 000      |
-| **PostgreSQL** | EPYC 7543 / 256GB RAM / 4×NVMe 3.8TB / 2×25GbE       | 32    | 4   | €5 000  |
+| **kubernode**  | EPYC 7713P / 128GB / 2×NVMe / 2×25GbE   | 64    | 3  | €5 000      |
+| **NGINX L7 (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 2 | €2 000 |
+| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 2 | €2 000 |
+| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 2×200GbE    | 16    | 2   | €5 200 |
+| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 14 | €4 000    |
+| **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 7  | €3 000      |
+| **PostgreSQL** | EPYC 7543 / 256GB RAM / 4×NVMe 3.8TB / 2×25GbE       | 32    | 6   | €5 000  |
 | **ClickHouse**     | EPYC 7443 / 128GB RAM / 2×NVMe 1.6TB / 2×10GbE               | 24    | 3   | €3 000  |
-| **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 48    | 920 | €7 500   |
-| **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 1   | €4 000 |
+| **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 48    | 921 | €7 500   |
+| **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 3   | €4 000 |
 
 ## Санкт-Петербург
 
@@ -355,14 +356,20 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **NGINX L7 (data)**    | ~1676   | SSL Term + Proxy      | 5  | ~0.043 GB | ~23.4 Мбит/с |
 | **NGINX L4**           | ~1563   | L4 passthrough        | 5  | ~0.041 GB | ~84.5 Гбит/с |
 
+### Хранилища
+| Хранилище     | Объём     | QPS  |
+|---------------|-----------|------|
+| Ceph          | ~77 ПБ    | ~625 |
+| Cassandra     | ~0,45 ТБ    | ~725 |
+
 ### Железо для СПБ (`data`) (пока без резервирования)
 | Узел           | Конфигурация                           | Cores | Cnt    | Цена            |
 | -------------- | -------------------------------------- | ----- | ------ | --------------- |
-| **kubernode** | EPYC 7443P / 64GB / 2×NVMe / 10GbE | 24 | 1 | €3 000 |
-| **NGINX L7 (data)** | EPYC 7313P / 32GB / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
-| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 1×100GbE    | 16    | 1   | €4 000 |
-| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 5 | €4 500    |
-| **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 2  | €3 000      |
+| **kubernode** | EPYC 7443P / 64GB / 2×NVMe / 10GbE | 24 | 2 | €3 000 |
+| **NGINX L7 (data)** | EPYC 7313P / 32GB / 1×NVMe / 10GbE | 16 | 2 | €2 000 |
+| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 1×100GbE    | 16    | 2   | €3 000 |
+| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 6 | €4 500    |
+| **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 3  | €3 000      |
 
 
 ## Краснодар, Екатеринбург, Новосибирск, Хабаровск
@@ -379,11 +386,11 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 ### Железо для СПБ (`data`) (пока без резервирования)
 | Узел           | Конфигурация                           | Cores | Cnt    | Цена            |
 | -------------- | -------------------------------------- | ----- | ------ | --------------- |
-| **kubernode** | EPYC 7313P / 32GB / 2×NVMe / 10GbE | 16 | 1 | €1 800 |
-| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
-| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 25GbE    | 16    | 1   | €4 000 |
-| **S3 Gateway** | EPYC 7443P / 32GB / 2×NVMe / 25GbE | 24    | 2 | €3 000    |
-| **AV Scanner** | EPYC 7313P / 32GB / 1×NVMe / 10GbE   | 16    | 1  | €1 700     |
+| **kubernode** | EPYC 7313P / 32GB / 2×NVMe / 10GbE | 16 | 2 | €1 800 |
+| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 2 | €2 000 |
+| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 25GbE    | 16    | 2   | €2 500 |
+| **S3 Gateway** | EPYC 7443P / 32GB / 2×NVMe / 25GbE | 24    | 3 | €3 000    |
+| **AV Scanner** | EPYC 7313P / 32GB / 1×NVMe / 10GbE   | 16    | 2  | €1 700     |
 
 
 ### Размещение
