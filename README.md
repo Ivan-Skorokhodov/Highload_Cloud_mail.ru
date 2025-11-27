@@ -342,7 +342,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 7  | €3 000      |
 | **PostgreSQL** | EPYC 7543 / 256GB RAM / 4×NVMe 3.8TB / 2×25GbE       | 32    | 6   | €5 000  |
 | **ClickHouse**     | EPYC 7443 / 128GB RAM / 2×NVMe 1.6TB / 2×10GbE               | 24    | 3   | €3 000  |
-| **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 48    | 921 | €7 500   |
+| **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 24    | 921 | €7 500   |
 | **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 3   | €4 000 |
 
 ## Санкт-Петербург
@@ -370,6 +370,9 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 1×100GbE    | 16    | 2   | €3 000 |
 | **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 6 | €4 500    |
 | **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 3  | €3 000      |
+| **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 24    | 336 | €7 500   |
+| **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 3   | €4 000 |
+
 
 
 ## Краснодар, Екатеринбург, Новосибирск, Хабаровск
@@ -391,6 +394,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 25GbE    | 16    | 2   | €2 500 |
 | **S3 Gateway** | EPYC 7443P / 32GB / 2×NVMe / 25GbE | 24    | 3 | €3 000    |
 | **AV Scanner** | EPYC 7313P / 32GB / 1×NVMe / 10GbE   | 16    | 2  | €1 700     |
+
 
 
 ### Размещение
