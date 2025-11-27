@@ -313,6 +313,8 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **File_Meta_Service**      | ~4440        | Средняя бизнес-логика     | 45  | ~4.5 GB   | ~5 Мбит/с |
 | **Metrics_Service**        | ~7925        | Средняя бизнес-логика     | 80  | ~8 GB     | ~20 Мбит/с |
 | **NGINX (L7: cloud/meta)** | ~4500        | SSL Term + Proxy          | 11   | ~0.09 GB  | ~40–50 Мбит/с |
+| **Kafka**                  | ~7925        | Легкая бизнес-логика      | 16    | ~0.396 GB | ~40 Мбит/с |
+
 
 ### Общая нагрузка на домен `data` в Москве (`k = 13/22`)
 | Компонент          | Пиковый RPS | Характер сервиса         | CPU         | RAM          | Трафик           |
@@ -322,6 +324,8 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **S3 Gateway**     | ~4060        | Тяжелая бизнес-логика     |407 | ~40.78 GB | ~219.8 Гбит/с |
 | **NGINX (L7: data)**       | ~4360        | SSL Term + Proxy          |11  | ~0.112 GB | ~60.9 Мбит/с  |
 | **NGINX (L4, stream)**       | ~4060        | L4 passthrough            |11  | ~0.106 GB | ~219.8 Гбит/с |
+| **Kafka** | ~4360       | Лёгкая бизнес-логика | 9 | ~0.218 GB | ~22 Мбит/с |
+
 
 ### Хранилища в Москве (`k = 13/22`)
 | Хранилище     | Объём     | QPS  |
@@ -344,6 +348,9 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **ClickHouse**     | EPYC 7443 / 128GB RAM / 2×NVMe 1.6TB / 2×10GbE               | 24    | 3   | €3 000  |
 | **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 24    | 921 | €7 500   |
 | **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 3   | €4 000 |
+| **Kafka (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 3 | €2 000 |
+| **Kafka (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 3 | €2 000 |
+
 
 ## Санкт-Петербург
 
@@ -355,6 +362,8 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **S3 Gateway**         | ~1563   | Тяжелая бизнес-логика | 157 | ~15.7 GB  | ~84.5 Гбит/с |
 | **NGINX L7 (data)**    | ~1676   | SSL Term + Proxy      | 5  | ~0.043 GB | ~23.4 Мбит/с |
 | **NGINX L4**           | ~1563   | L4 passthrough        | 5  | ~0.041 GB | ~84.5 Гбит/с |
+| **Kafka** | ~1676       | Лёгкая бизнес-логика | 4 | ~0.082 GB | ~9 Мбит/с |
+
 
 ### Хранилища в СПБ (`k = 5/22`)
 | Хранилище     | Объём     | QPS  |
@@ -372,6 +381,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 3  | €3 000      |
 | **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 24    | 336 | €7 500   |
 | **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 3   | €4 000 |
+| **Kafka** | EPYC 7313P / 32GB / 1×NVMe / 10GbE | 16 | 3 | €2 000 |
 
 
 
@@ -385,6 +395,8 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **S3 Gateway**         | ~313    | Тяжелая бизнес-логика | 32 | ~3.14 GB    | ~16.91 Гбит/с |
 | **NGINX L7 (data)**    | ~335    | SSL Term + Proxy      | 1 | ~0.00864 GB | ~4.68 Мбит/с  |
 | **NGINX L4**           | ~313    | L4 passthrough        | 1 | ~0.00818 GB | ~16.91 Гбит/с |
+| **Kafka** | ~335        | Лёгкая бизнес-логика | 1 | ~0.016 GB | ~2 Мбит/с |
+
 
 ### Хранилища в регионе (`k = 1/22`)
 | Хранилище     | Объём     | QPS  |
@@ -402,6 +414,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **AV Scanner** | EPYC 7313P / 32GB / 1×NVMe / 10GbE   | 16    | 2  | €1 700     |
 | **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 24    | 78 | €7 500   |
 | **Cassandra** | EPYC 7313P / 64GB RAM / 2×NVMe 1.6TB / 10GbE | 16    | 3   | €2 000 |
+| **Kafka** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 3 | €2 000 |
 
 
 ### Размещение
@@ -415,6 +428,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **S3 Gateway**           | Bare metal     | 
 | **AV_Scanner**           | Bare metal     | 
 | **Nginx (L4, stream)**   | Bare metal     | 
+| **Kafka**                | Bare metal     | 
 | **Хранилища**            | Bare metal     | 
 
 
