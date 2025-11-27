@@ -294,6 +294,14 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **NGINX (L7: data)**       | ~7375        | SSL Term + Proxy          |19  | ~0.19 GB | ~103 Мбит/с  |
 | **NGINX (L4, stream)**       | ~6875        | L4 passthrough            |18  | ~0.18 GB | ~372 Гбит/с  |
 
+### Хранилища
+| Хранилище     | Объём     | QPS  |
+|---------------|-----------|------|
+| PostgreSQL    | 19.4 ТБ   | 2275 |
+| Ceph          | 335 ПБ    | 2750 |
+| Cassandra     | 1.9 ТБ    | 3170 |
+| ClickHouse    | 370 ГБ    | 2755 |
+
 
 ## Москва
 
@@ -303,7 +311,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **User_Service**           | ~125         | Лёгкое JSON API           | 1   | ~0.01 GB  | ~1 Мбит/с |
 | **File_Meta_Service**      | ~4440        | Средняя бизнес-логика     | 45  | ~4.5 GB   | ~5 Мбит/с |
 | **Metrics_Service**        | ~7925        | Средняя бизнес-логика     | 80  | ~8 GB     | ~20 Мбит/с |
-| **NGINX (L7: cloud/meta)** | ~4500     | SSL Term + Proxy          | 11   | ~0.09 GB  | ~40–50 Мбит/с |
+| **NGINX (L7: cloud/meta)** | ~4500        | SSL Term + Proxy          | 11   | ~0.09 GB  | ~40–50 Мбит/с |
 
 ### Общая нагрузка на домен `data` в Москве (`k = 13/22`)
 | Компонент          | Пиковый RPS | Характер сервиса         | CPU         | RAM          | Трафик           |
@@ -314,16 +322,27 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **NGINX (L7: data)**       | ~4360        | SSL Term + Proxy          |11  | ~0.112 GB | ~60.9 Мбит/с  |
 | **NGINX (L4, stream)**       | ~4060        | L4 passthrough            |11  | ~0.106 GB | ~219.8 Гбит/с |
 
+### Хранилища в Москве (`k = 13/22`)
+| Хранилище     | Объём     | QPS  |
+|---------------|-----------|------|
+| PostgreSQL    | 19.4 ТБ   | 2275 |
+| Ceph          | ~198 ПБ   | ~1625 |
+| Cassandra     | ~1.1 ТБ    | ~1875 |
+| ClickHouse    | 370 ГБ    | 2755 |
+
 ### Железо для Москвы (`cloud` + `meta` + `data`) (пока без резервирования)
 | Узел           | Конфигурация                           | Cores | Cnt    | Цена            |
 | -------------- | -------------------------------------- | ----- | ------ | --------------- |
-| **kubernode**  | EPYC 7713P / 64GB / 2×NVMe / 2×25GbE   | 64    | 3  | €7 200      |
-| **NGINX L7 (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
-| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
-| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 2×200GbE    | 16    | 1   | €6 000 |
+| **kubernode**  | EPYC 7713P / 64GB / 2×NVMe / 2×25GbE   | 64    | 3  | €5 000      |
+| **NGINX L7 (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €2 000 |
+| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €2 000 |
+| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 2×200GbE    | 16    | 1   | €5 200 |
 | **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 13 | €4 000    |
 | **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 6  | €3 000      |
-
+| **PostgreSQL** | EPYC 7543 / 256GB RAM / 4×NVMe 3.8TB / 2×25GbE       | 32    | 4   | €5 000  |
+| **ClickHouse**     | EPYC 7443 / 128GB RAM / 2×NVMe 1.6TB / 2×10GbE               | 24    | 3   | €3 000  |
+| **Ceph** | EPYC 7443 / 128GB RAM / 12×HDD 18TB + 4×NVMe 1.6TB / 10GbE | 48    | 920 | €7 500   |
+| **Cassandra**   | EPYC 7443 / 128GB RAM / 2×NVMe 3.8TB / 25GbE       | 24 | 1   | €4 000 |
 
 ## Санкт-Петербург
 
@@ -368,7 +387,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 
 
 ### Размещение
-| Компонент            | Где запускаем |
+| Компонент            | Где запускаем (own)|
 |----------------------|----------------|
 | **User_Service**         | Kubernetes     | 
 | **File_Meta_Service**    | Kubernetes     | 
@@ -378,14 +397,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **S3 Gateway**           | Bare metal     | 
 | **AV_Scanner**           | Bare metal     | 
 | **Nginx (L4, stream)**   | Bare metal     | 
-
-### Железо (всего)
-| Название узла           | Хостинг | Конфигурация                                               | Cores | Cnt | Покупка |
-|-------------------------|---------|------------------------------------------------------------|-------|-----|--------------|
-| **kubernode + nginx L7**| own     | 1×EPYC 7713P / 256GB RAM / 2×1.92TB NVMe / 2×25Gb/s       | 64    | 8   | €10 600      |
-| **nginx L4 stream node**| own     | 1×EPYC 7313 / 64GB RAM / 1×960GB NVMe / 2×100Gb/s         | 16    | 6   | €7 200       | 
-| **S3 gateway node**     | own     | 1×EPYC 7543P / 128GB RAM / 2×3.84TB NVMe / 2×100Gb/s      | 32    | 24   | €14 500      |
-| **AV scanner node**     | own     | 1×EPYC 7543P / 128GB RAM / 1×3.84TB NVMe / 2×25Gb/s       | 32    | 24   | €12 500      |
+| **Хранилища**            | Bare metal     | 
 
 ### Хранилища
 | Хранилище     | Объём     | QPS  |
