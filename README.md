@@ -321,8 +321,8 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **NGINX L7 (cloud/meta)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
 | **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
 | **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 2×200GbE    | 16    | 1   | €6 000 |
-| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 13 | €7 500    |
-| **AV Scanner** | EPYC 7543P / 64GB / 1×NVMe / 10GbE   | 32    | 6  | €3 000      |
+| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 13 | €4 000    |
+| **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 6  | €3 000      |
 
 
 ## Санкт-Петербург
@@ -339,21 +339,32 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 ### Железо для СПБ (`data`) (пока без резервирования)
 | Узел           | Конфигурация                           | Cores | Cnt    | Цена            |
 | -------------- | -------------------------------------- | ----- | ------ | --------------- |
-| **kubernode** | *EPYC 7443P / 64GB / 1–2×NVMe / 10GbE | 24 | 1 | €3 000 |
-| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
+| **kubernode** | EPYC 7443P / 64GB / 2×NVMe / 10GbE | 24 | 1 | €3 000 |
+| **NGINX L7 (data)** | EPYC 7313P / 32GB / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
 | **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 1×100GbE    | 16    | 1   | €4 000 |
-| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 5 | €7 500    |
-| **AV Scanner** | EPYC 7543P / 64GB / 1×NVMe / 10GbE   | 32    | 2  | €3 000      |
+| **S3 Gateway** | EPYC 7532 / 64GB / 2×NVMe / 25GbE | 32    | 5 | €4 500    |
+| **AV Scanner** | EPYC 7543P / 32GB / 1×NVMe / 10GbE   | 32    | 2  | €3 000      |
 
 
-### Общая нагрузка на домен `data` регионах (`k = 1/22`, Краснодар, Екатеринбург, Новосибирск, Хабаровск)
+## Краснодар, Екатеринбург, Новосибирск, Хабаровск
+
+### Общая нагрузка на домен `data` регионах (`k = 1/22`)
 | Компонент              | Пиковый RPS | Характер сервиса      | CPU       | RAM             | Трафик            |
 | ---------------------- | ----------- | --------------------- | --------- | --------------- | ----------------- |
 | **Access_Service**     | ~335    | Средняя бизнес-логика | 4  | ~0.35 GB    | ~4.68 Мбит/с  |
 | **AV_Scanner**         | ~125    | Тяжелая бизнес-логика | 13  | ~1.26 GB    | ~0.654 Гбит/с |
 | **S3 Gateway**         | ~313    | Тяжелая бизнес-логика | 32 | ~3.14 GB    | ~16.91 Гбит/с |
-| **NGINX (L7: data)**   | ~335    | SSL Term + Proxy      | 1 | ~0.00864 GB | ~4.68 Мбит/с  |
-| **NGINX (L4, stream)** | ~313    | L4 passthrough        | 1 | ~0.00818 GB | ~16.91 Гбит/с |
+| **NGINX L7 (data)**    | ~335    | SSL Term + Proxy      | 1 | ~0.00864 GB | ~4.68 Мбит/с  |
+| **NGINX L4**           | ~313    | L4 passthrough        | 1 | ~0.00818 GB | ~16.91 Гбит/с |
+
+### Железо для СПБ (`data`) (пока без резервирования)
+| Узел           | Конфигурация                           | Cores | Cnt    | Цена            |
+| -------------- | -------------------------------------- | ----- | ------ | --------------- |
+| **kubernode** | EPYC 7313P / 32GB / 2×NVMe / 10GbE | 16 | 1 | €1 800 |
+| **NGINX L7 (data)** | EPYC 7313P / 32GB RAM / 1×NVMe / 10GbE | 16 | 1 | €3 000 |
+| **NGINX L4**   | EPYC 7313P / 32GB / 1×NVMe / 25GbE    | 16    | 1   | €4 000 |
+| **S3 Gateway** | EPYC 7443P / 32GB / 2×NVMe / 25GbE | 24    | 2 | €3 000    |
+| **AV Scanner** | EPYC 7313P / 32GB / 1×NVMe / 10GbE   | 16    | 1  | €1 700     |
 
 
 ### Размещение
@@ -363,7 +374,7 @@ Client → `download_url` → `L4` → **S3 Gateway** → (cache) → **Ceph (S3
 | **File_Meta_Service**    | Kubernetes     | 
 | **Access_Service**       | Kubernetes     | 
 | **Metrics_Service**      | Kubernetes     | 
-| **Nginx (L7)**           | ВМ| 
+| **Nginx (L7)**           | VM             | 
 | **S3 Gateway**           | Bare metal     | 
 | **AV_Scanner**           | Bare metal     | 
 | **Nginx (L4, stream)**   | Bare metal     | 
